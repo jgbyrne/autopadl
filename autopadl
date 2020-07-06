@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+# Load config values
+source /etc/autopadl.rc
+
+
+if [ -z $1 ]; then
+	echo "autopadl start : initialise"
+	echo "autopadl stop  : kill"
+	exit 1
+
+# Start the daemon
+elif [ "$1" = "start" ]; then 
+	echo $(date) "- autopadl started" >> /var/log/autopadl.log
+	
+	# Kill any extant instances as a precaution
+	killall pulseuadio-dlna
+
+	# Choose a random port	
+	PORT=$(shuf -i50000-60000 -n1)
+	echo $PORT > /var/run/autopadl.port
+
+	# Open the relevant ports in a new `dlna` chain in the firewall	
+	nft add chain $AUTOPADL_NFT_TABLE dlna
+	nft flush chain $AUTOPADL_NFT_TABLE dlna
+	nft add rule $AUTOPADL_NFT_TABLE dlna "tcp dport 8080 accept"
+	nft add rule $AUTOPADL_NFT_TABLE dlna "udp dport 1900 accept"
+	nft add rule $AUTOPADL_NFT_TABLE dlna "udp dport ($PORT) accept"
+	nft insert rule $AUTOPADL_NFT_TABLE $AUTOPADL_NFT_CHAIN "jump dlna"
+
+	# Extract the handle for the jump rule and store it
+	nft -n -a list table $AUTOPADL_NFT_TABLE | grep "jump dlna" | sed 's/.*handle //' > /var/run/autopadl.handle
+
+	# Start the daemon and log its PID	
+	pulseaudio-dlna --msearch-port $PORT $AUTOPADL_PADL_ARGS > /var/log/autopadl.padl.log 2>&1 < /dev/null &
+	echo $! > /var/run/autopadl.padl.pid
+	exit $?
+
+# Stop the daemon
+elif [ "$1" = "stop" ]; then
+	echo $(date) "- autopadl stopped" >> /var/log/autopadl.log
+
+	# Kill the daemon using the logged PID
+        kill $(cat /var/run/autopadl.padl.pid)
+
+	# Remove the firewall rules
+	nft delete rule $AUTOPADL_NFT_TABLE $AUTOPADL_NFT_TABLE handle $(cat /var/run/autopadl.handle) 
+	nft flush chain $AUTOPADL_NFT_TABLE dlna
+	nft delete chain $AUTOPADL_NFT_TABLE dlna
+
+	# Remove the logged instance attributes
+	rm /var/run/autopadl.*
+	exit 0
+
+else
+	echo "autopadl start : initialise"
+	echo "autopadl stop  : kill"
+	exit 1
+fi
+

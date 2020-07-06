@@ -1,0 +1,12 @@
+[Unit]
+Description=Daemonised pulseaudio-dlna
+Requires=sound.target network.target
+After=sound.target network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/autopadl start
+ExecStop=/usr/bin/autopadl stop
+
+[Install]
+WantedBy=multi-user.target

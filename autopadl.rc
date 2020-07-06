@@ -1,0 +1,3 @@
+AUTOPADL_NFT_TABLE="inet filter"
+AUTOPADL_NFT_CHAIN="input"
+AUTOPADL_PADL_ARGS="--codec flac"
