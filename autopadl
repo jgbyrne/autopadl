@@ -44,7 +44,7 @@ elif [ "$1" = "stop" ]; then
         kill $(cat /var/run/autopadl.padl.pid)
 
 	# Remove the firewall rules
-	nft delete rule $AUTOPADL_NFT_TABLE $AUTOPADL_NFT_TABLE handle $(cat /var/run/autopadl.handle) 
+	nft delete rule $AUTOPADL_NFT_TABLE $AUTOPADL_NFT_CHAIN handle $(cat /var/run/autopadl.handle) 
 	nft flush chain $AUTOPADL_NFT_TABLE dlna
 	nft delete chain $AUTOPADL_NFT_TABLE dlna
 
