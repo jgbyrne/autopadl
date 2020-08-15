@@ -14,7 +14,7 @@ elif [ "$1" = "start" ]; then
 	echo $(date) "- autopadl started" >> /var/log/autopadl.log
 	
 	# Kill any extant instances as a precaution
-	killall pulseuadio-dlna
+	killall pulseaudio-dlna
 
 	# Choose a random port	
 	PORT=$(shuf -i50000-60000 -n1)
